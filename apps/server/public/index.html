@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <title>小练语音助手 (Web 客户端 - PCM)</title>
+        <style>
+            body {
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                    Helvetica, Arial, sans-serif;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+                margin: 0;
+                background-color: #f4f4f9;
+            }
+            .container {
+                border-radius: 12px;
+                padding: 40px;
+                width: 90%;
+                max-width: 500px;
+                background-color: #fff;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                text-align: center;
+            }
+            button {
+                font-size: 1.2rem;
+                padding: 12px 25px;
+                margin: 10px;
+                cursor: pointer;
+                border-radius: 8px;
+                border: 1px solid #ccc;
+                transition: background-color 0.2s;
+            }
+            button:disabled {
+                cursor: not-allowed;
+                opacity: 0.6;
+            }
+            #startBtn {
+                background-color: #28a745;
+                color: white;
+            }
+            #stopBtn {
+                background-color: #dc3545;
+                color: white;
+            }
+            #status {
+                margin-top: 25px;
+                font-size: 1.1rem;
+                font-weight: bold;
+                color: #555;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🎤 小练语音助手 🎤</h1>
+            <div class="controls">
+                <button id="startBtn">开始录音</button>
+                <button id="stopBtn" disabled>停止录音</button>
+            </div>
+            <div id="status">状态: 空闲</div>
+        </div>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const startBtn = document.getElementById("startBtn");
+                const stopBtn = document.getElementById("stopBtn");
+                const statusDiv = document.getElementById("status");
+
+                let websocket;
+                let audioContext;
+                let audioStream;
+                let audioWorkletNode;
+
+                const log = (msg) => {
+                    statusDiv.textContent = `状态: ${msg}`;
+                    console.log(`[客户端] ${msg}`);
+                };
+
+                // 将 AudioWorklet 处理器代码作为内联字符串，以避免额外的文件加载
+                const audioProcessorCode = `
+                class PcmBufferProcessor extends AudioWorkletProcessor {
+                  constructor() {
+                    super();
+                    this.frameSize = 960;
+                    this.buffer = new Int16Array(this.frameSize);
+                    this.bufferIndex = 0;
+                    this.isRecording = false;
+                    this.port.onmessage = (event) => {
+                      if (event.data.command === 'start') this.isRecording = true;
+                      else if (event.data.command === 'stop') {
+                        this.isRecording = false;
+                        if (this.bufferIndex > 0) {
+                          const finalBuffer = this.buffer.slice(0, this.bufferIndex);
+                          this.port.postMessage(finalBuffer.buffer, [finalBuffer.buffer]);
+                        }
+                      }
+                    };
+                  }
+                  process(inputs) {
+                    if (!this.isRecording) return true;
+                    const input = inputs[0][0];
+                    if (!input) return true;
+                    for (let i = 0; i < input.length; i++) {
+                      this.buffer[this.bufferIndex++] = Math.max(-1, Math.min(1, input[i])) * 0x7FFF;
+                      if (this.bufferIndex >= this.frameSize) {
+                        this.port.postMessage(this.buffer.buffer, [this.buffer.buffer]);
+                        this.buffer = new Int16Array(this.frameSize);
+                        this.bufferIndex = 0;
+                      }
+                    }
+                    return true;
+                  }
+                }
+                registerProcessor('pcm-buffer-processor', PcmBufferProcessor);
+            `;
+
+                async function start() {
+                    if (audioContext) return; // 防止重复点击
+                    log("正在启动...");
+                    startBtn.disabled = true;
+
+                    try {
+                        const url = `ws://${window.location.host}/audio`;
+                        websocket = new WebSocket(url);
+
+                        websocket.onopen = async () => {
+                            log("连接成功，正在请求麦克风...");
+                            audioContext = new (window.AudioContext ||
+                                window.webkitAudioContext)({
+                                sampleRate: 16000,
+                            });
+                            audioStream =
+                                await navigator.mediaDevices.getUserMedia({
+                                    audio: { sampleRate: 16000 },
+                                });
+
+                            const source =
+                                audioContext.createMediaStreamSource(
+                                    audioStream,
+                                );
+
+                            const blob = new Blob([audioProcessorCode], {
+                                type: "application/javascript",
+                            });
+                            const processorUrl = URL.createObjectURL(blob);
+                            await audioContext.audioWorklet.addModule(
+                                processorUrl,
+                            );
+                            URL.revokeObjectURL(processorUrl);
+
+                            audioWorkletNode = new AudioWorkletNode(
+                                audioContext,
+                                "pcm-buffer-processor",
+                            );
+
+                            // 监听来自处理器的、已经打包好的PCM数据块
+                            audioWorkletNode.port.onmessage = (event) => {
+                                if (
+                                    websocket &&
+                                    websocket.readyState === WebSocket.OPEN
+                                ) {
+                                    // event.data 就是一个完整的 ArrayBuffer
+                                    websocket.send(event.data);
+                                }
+                            };
+
+                            source.connect(audioWorkletNode);
+
+                            // 告诉处理器开始工作
+                            audioWorkletNode.port.postMessage({
+                                command: "start",
+                            });
+
+                            stopBtn.disabled = false;
+                            log("正在录音...");
+                        };
+
+                        websocket.onclose = () => {
+                            log("连接已关闭");
+                            cleanUp();
+                        };
+
+                        websocket.onerror = (err) => {
+                            log("连接错误");
+                            console.error("WebSocket Error:", err);
+                            cleanUp();
+                        };
+                    } catch (error) {
+                        log(`启动失败: ${error.message}`);
+                        cleanUp();
+                    }
+                }
+
+                function stop() {
+                    if (!audioContext) return;
+                    log("正在停止...");
+                    stopBtn.disabled = true;
+
+                    // 告诉处理器停止并发送最后一个数据包
+                    if (audioWorkletNode) {
+                        audioWorkletNode.port.postMessage({ command: "stop" });
+                    }
+
+                    // 停止麦克风轨道
+                    if (audioStream) {
+                        audioStream
+                            .getTracks()
+                            .forEach((track) => track.stop());
+                    }
+
+                    // 给予最后一个数据包发送的时间，然后关闭连接
+                    setTimeout(() => {
+                        if (websocket) websocket.close();
+                        if (audioContext) audioContext.close();
+                        cleanUp();
+                    }, 200);
+                }
+
+                function cleanUp() {
+                    websocket =
+                        audioContext =
+                        audioStream =
+                        audioWorkletNode =
+                            null;
+                    startBtn.disabled = false;
+                    stopBtn.disabled = true;
+                    if (statusDiv.textContent.includes("正在")) {
+                        log("空闲");
+                    }
+                }
+
+                startBtn.addEventListener("click", start);
+                stopBtn.addEventListener("click", stop);
+                log("页面已加载，请开始录音。");
+            });
+        </script>
+    </body>
+</html>

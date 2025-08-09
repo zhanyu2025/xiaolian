@@ -1,0 +1,130 @@
+# pyproject.toml
+
+# [build-system]
+# 定义项目的构建系统。这是PEP 518标准的一部分，告诉pip等工具如何构建你的项目。
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+# [project]
+# PEP 621标准，定义项目的核心元数据。
+[project]
+name = "xiaolian"
+version = "0.1.0"
+description = "小练 - 一个实时的语音AI助手服务端和客户端。"
+authors = [
+  { name="zhanyu", email="zhanyuilong@gmail.com" },
+]
+readme = "README.md"
+requires-python = ">=3.10, <3.13"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+# 核心依赖
+dependencies = [
+    "websockets",
+]
+
+# [project.optional-dependencies]
+# 可选依赖项，实现依赖分离。
+[project.optional-dependencies]
+# 服务器应用依赖
+server = [
+    "fastapi",
+    "uvicorn",
+
+]
+# TUI客户端依赖
+cli = [
+    "pyaudio",
+    "numpy",
+]
+# 开发环境依赖
+dev = [
+    "xiaolian[server,cli]",
+]
+
+# [tool.setuptools.packages.find]
+# 配置setuptools如何发现我们的Python包。
+[tool.setuptools.packages.find]
+where = ["apps"]
+
+# ==============================================================================
+#                      代码质量与格式化工具配置 (Ruff)
+# ==============================================================================
+[tool.ruff]
+# 设置 Ruff 应该排除检查的目录。
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+]
+# 设置每行的最大长度。
+line-length = 100
+# 指定 Ruff 应该针对哪个 Python 版本进行代码现代化和兼容性检查。
+target-version = "py310"
+
+[tool.ruff.lint]
+# 选择你想要启用的代码检查规则。
+# 详细列表: https://docs.astral.sh/ruff/rules/
+select = [
+    "E",  # pycodestyle 错误
+    "F",  # Pyflakes (未使用的导入、未定义的变量等)
+    "W",  # pycodestyle 警告
+    "I",  # isort (导入排序)
+    "B",  # flake8-bugbear (潜在的逻辑错误)
+    "C90",# McCabe (代码复杂度)
+    "UP", # pyupgrade (代码现代化)
+]
+
+# (可选) 在这里忽略特定的规则。
+# ignore = []
+
+[tool.ruff.lint.mccabe]
+# 设置最大的代码圈复杂度，超过此值的函数将被标记。
+max-complexity = 10
+
+[tool.ruff.lint.isort]
+# 告诉isort，'apps'目录是我们的第一方/项目内模块。
+# 这可以确保 `import apps.cli` 和 `import numpy` 被正确地分组。
+known-first-party = ["apps"]
+
+[tool.ruff.format]
+# 配置代码格式化器。
+# 使用双引号作为字符串的默认风格。
+quote-style = "double"
+# 在二进制表达式（如 `+` `-`）之前换行，以提高可读性。
+line-ending = "auto"
+
+# ==============================================================================
+#                      类型检查工具配置 (Pyright)
+# ==============================================================================
+[tool.pyright]
+# 告诉 Pyright 在哪里可以找到 Python 虚拟环境。
+venvPath = "."
+venv = ".venv"
+# 指定包含要分析的源代码的目录。
+include = [
+    "apps/cli/src",
+    "apps/server/src"
+]
+# (可选但推荐) 将导入错误降级为警告，这样可以减少干扰。
+reportMissingImports = "warning"
