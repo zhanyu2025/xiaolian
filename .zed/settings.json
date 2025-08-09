@@ -1,10 +1,19 @@
 {
-  // 这个配置文件会覆盖Zed编辑器的用户默认设置，仅对本项目生效。
   "languages": {
-    // 针对所有Python文件进行以下设置
     "Python": {
-      // 开启“保存时自动格式化”功能。
-      // Zed会自动检测到项目中的 pyproject.toml 文件，并使用 ruff 作为格式化工具。
+      "formatter": [
+        {
+          "code_actions": {
+            "source.organizeImports.ruff": true,
+            "source.fixAll.ruff": true
+          }
+        },
+        {
+          "language_server": {
+            "name": "ruff"
+          }
+        }
+      ],
       "format_on_save": "on"
     }
   }

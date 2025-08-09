@@ -1,0 +1,36 @@
+# ==============================================================================
+#                      服务提供者 (Providers) 定义
+# ==============================================================================
+# 在这里定义所有可用的服务提供者及其配置。
+# ServiceManager 将会从这里读取并加载相应的服务。
+
+asr_providers:
+  # FunASR (本地 SenseVoice 模型)
+  funasr_local:
+    # class_path 指向 Provider 实现类的完整路径 (相对于 src 目录)
+    class_path: providers.asr.fun.FunASRProvider
+    # config 将作为关键字参数传递给 Provider 类的构造函数
+    config:
+      # model_path 是 FunASRProvider.__init__ 需要的参数
+      # 修正：使用容器内的绝对路径。Dockerfile 将本地模型复制到了这个位置。
+      model_path: "/home/appuser/models/SenseVoiceSmall"
+
+# vad_providers:
+#   silero_local:
+#     class_path: providers.vad.silero.SileroVADProvider
+#     config:
+#       # Silero VAD 可能需要的参数
+#       level: "high"
+
+# ==============================================================================
+#                      激活的服务 (Active Services)
+# ==============================================================================
+# 在这里选择我们本次运行要激活的服务。
+# ServiceManager 将根据这里的设置来加载相应的 Provider。
+# 这使得切换服务后端只需要修改这里的配置，无需改动任何 Python 代码。
+
+active_providers:
+  asr: funasr_local
+  # vad: silero_local
+  # llm: tongyi_local
+  # tts: edge_local

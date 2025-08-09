@@ -25,6 +25,7 @@ classifiers = [
 # 核心依赖
 dependencies = [
     "websockets",
+    "pyyaml",
 ]
 
 # [project.optional-dependencies]
@@ -34,7 +35,17 @@ dependencies = [
 server = [
     "fastapi",
     "uvicorn",
-
+    # ASR (FunASR) 依赖
+    "funasr==1.2.3", # 锁定版本以匹配 xiaozhi-server 的行为
+    "torch",
+    "torchaudio",
+    "modelscope",
+    # 修正：显式指定 numba 和 llvmlite 的兼容版本，
+    # 以解决 funasr 的间接依赖与 Python 3.12 的兼容性问题。
+    "numba>=0.59.0",
+    "llvmlite>=0.42.0",
+    # 用于系统资源检查
+    "psutil",
 ]
 # TUI客户端依赖
 cli = [
@@ -79,6 +90,12 @@ exclude = [
 ]
 # 设置每行的最大长度。
 line-length = 100
+
+# 明确指定我们的“源根目录”。这能让Ruff正确理解我们的项目结构，
+# 就像我们在 app.py 中修改 sys.path 一样。
+# 这会正确地将 `asr`, `cli` 等识别为第一方模块。
+src = ["apps/server/src", "apps/cli/src"]
+
 # 指定 Ruff 应该针对哪个 Python 版本进行代码现代化和兼容性检查。
 target-version = "py310"
 
@@ -98,14 +115,14 @@ select = [
 # (可选) 在这里忽略特定的规则。
 # ignore = []
 
+[tool.ruff.lint.isort]
+# 由于我们已经在 [tool.ruff] 中定义了 `src`，Ruff能够智能地识别第一方模块，
+# 所以 `known-first-party` 选项不再是必需的了。
+# known-first-party = ["apps"]
+
 [tool.ruff.lint.mccabe]
 # 设置最大的代码圈复杂度，超过此值的函数将被标记。
 max-complexity = 10
-
-[tool.ruff.lint.isort]
-# 告诉isort，'apps'目录是我们的第一方/项目内模块。
-# 这可以确保 `import apps.cli` 和 `import numpy` 被正确地分组。
-known-first-party = ["apps"]
 
 [tool.ruff.format]
 # 配置代码格式化器。

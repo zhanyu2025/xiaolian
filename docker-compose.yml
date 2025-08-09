@@ -1,33 +1,36 @@
 services:
   xiaolian-server:
-    # build指令会告诉Docker Compose使用指定上下文目录中的Dockerfile来构建镜像
+    # build 指令会告诉 Docker Compose 使用指定上下文和 Dockerfile 来构建镜像。
     build:
-      # **修正**: 将构建上下文设置为项目根目录 ('.')
-      # 这样Dockerfile就可以访问到根目录下的任何文件，如 requirements.lock.txt
       context: .
-      # **修正**: 明确指定Dockerfile的位置
       dockerfile: ./apps/server/Dockerfile
 
-    # container_name给容器一个固定的、友好的名字
+    # container_name 给容器一个固定的、友好的名字。
     container_name: xiaolian_server
 
-    # ports指令将主机的端口映射到容器的端口
-    # 格式是 "主机端口:容器端口"
-    # 这允许我们通过本地的http://localhost:8000访问容器内的FastAPI应用
+    # ports 指令将主机的端口映射到容器的端口。
     ports:
       - "8000:8000"
 
     # --- 卷(Volumes) ---
-    # 卷用于将主机的文件系统路径挂载到容器内部
-    # 这对于开发(代码热重载)和数据持久化至关重要
+    # 卷用于将主机的文件系统路径挂载到容器内部，这对于开发至关重要。
+    # 我们在这里重新启用数据卷，以方便开发和调试。
+    # 注意：模型文件仍然是构建在镜像内部的，不受数据卷影响，以确保其一致性。
     volumes:
-      # 将服务器的源代码目录挂载到容器的/app目录
-      # 这使得在本地修改Python代码后，uvicorn可以自动重载，无需重建镜像
-      - ./apps/server:/app
-      # 将本地的录音文件夹挂载到容器的/app/recordings目录
-      # 这样，所有在容器内保存到/app/recordings的录音文件都会出现在本地文件系统中
-      - ./apps/server/recordings:/app/recordings
+      # 1. 挂载源代码目录 (`src`)：
+      #    这使得您在本地修改 Python 代码后，uvicorn 的 --reload 功能可以立即生效，
+      #    无需重新构建整个 Docker 镜像。
+      - ./apps/server/src:/home/appuser/src
 
-    # restart策略定义了容器在退出时的行为
-    # "unless-stopped"表示除非手动停止容器，否则它在意外退出后会自动重启
+      # 2. 挂载静态文件目录 (`public`)：
+      #    这是解决“Web UI 没了”问题的关键。它确保您本地的 `public` 文件夹
+      #    能被 FastAPI 正确地提供服务。
+      - ./apps/server/public:/home/appuser/public
+
+      # 3. 挂载录音目录 (`recordings`)：
+      #    这使得服务器在容器内保存的调试音频文件，可以方便地在您本地的
+      #    `apps/server/recordings` 目录中找到和播放。
+      - ./apps/server/recordings:/home/appuser/recordings
+
+    # restart 策略定义了容器在退出时的行为。
     restart: unless-stopped
