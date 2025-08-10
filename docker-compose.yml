@@ -1,0 +1,50 @@
+# docker-compose.yml (Production Base Configuration)
+#
+# This file defines the base configuration for running services in production.
+# It aligns with the isolated build process defined in `apps/server/Dockerfile`.
+
+services:
+  server:
+    # --- Build Configuration ---
+    # Defines how to build the 'server' service image.
+    build:
+      # [CRITICAL] The build context is set to the project root (`.`).
+      # This allows the Dockerfile to access monorepo-level files,
+      # specifically the unified `uv.lock` at the root.
+      context: .
+      # [CRITICAL] Explicitly specify the path to the Dockerfile.
+      dockerfile: ./apps/server/Dockerfile
+      # For production, we implicitly use the 'production' stage, which is the default target.
+
+    # A fixed, easily identifiable name for the container.
+    container_name: server
+
+    # Maps port 8000 on the host to port 8000 in the container.
+    ports:
+      - "8000:8000"
+
+    # Ensures the service restarts automatically unless manually stopped.
+    restart: unless-stopped
+
+    # --- Environment Configuration ---
+    # Loads environment variables (e.g., API keys) from a .env file at the root.
+    env_file:
+      - .env
+
+    # Defines environment variables directly within the container.
+    environment:
+      # [CRITICAL] Defines the absolute path for the models directory inside the container.
+      # This path matches the mount point created in the Dockerfile.
+      - MODELS_DIR_PATH=/home/xiaolian/server/models
+
+    # --- Volume Mounts ---
+    # Mounts host directories into the container for persistent data and models.
+    # The source paths are relative to this docker-compose file (the project root).
+    # The target paths are absolute paths inside the container.
+    volumes:
+      # Mounts the models from the host into the container. Read-only for safety.
+      - ./apps/server/models:/home/xiaolian/server/models:ro
+      # Mounts the recordings directory for persistent storage of audio files.
+      - ./apps/server/recordings:/home/xiaolian/server/recordings
+      # Mounts the public assets directory. Read-only as the app should not modify them.
+      - ./apps/server/public:/home/xiaolian/server/public:ro

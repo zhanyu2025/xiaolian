@@ -1,0 +1,58 @@
+# 通用配置
+line-length = 100
+target-version = "py310"
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pycache__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+]
+
+# Linter 配置
+[lint]
+select = [
+    "E",   # pycodestyle 错误
+    "F",   # Pyflakes (未使用的导入、未定义的变量等)
+    "W",   # pycodestyle 警告
+    "I",   # isort (导入排序)
+    "B",   # flake8-bugbear (潜在的逻辑错误)
+    "C90", # McCabe (代码复杂度)
+    "UP",  # pyupgrade (代码现代化)
+]
+
+# 忽略特定规则。
+# B008: FastAPI 的依赖注入模式 `Depends()` 在函数参数默认值中被调用，
+# 这在 FastAPI 中是正确且惯用的做法，但会被通用的 Python linter 误报。
+# 我们在这里全局禁用此规则，以遵循框架的最佳实践。
+ignore = ["B008"]
+
+[lint.mccabe]
+# 设置最大的代码圈复杂度，超过此值的函数将被标记。
+max-complexity = 10
+
+[lint.isort]
+# 告诉isort，“apps”目录是我们的第一方/项目内模块。
+# 这可以确保 `import apps.cli` 和 `import numpy` 被正确地分组。
+known-first-party = ["apps"]
+
+# Formatter 配置
+[format]
+# 使用双引号作为字符串的默认风格。
+quote-style = "double"
+# 在二进制表达式（如 `+` `-`）之前换行，以提高可读性。
+line-ending = "auto"

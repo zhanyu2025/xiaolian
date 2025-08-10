@@ -1,0 +1,33 @@
+# docker-compose.override.yml (Development Override)
+#
+# This file adapts the base configuration for local development,
+# enabling features like source code hot-reloading. It is automatically
+# merged with docker-compose.yml when you run `docker-compose up`.
+
+services:
+  server:
+    # --- Volume Mounts for Hot-Reloading ---
+    # We mount local source code and asset directories directly into the container.
+    # When you change a file locally, it's immediately updated in the container,
+    # and uvicorn's reloader will restart the server.
+    #
+    # Note: We selectively mount only the directories that need to be updated
+    # during development. The .venv directory inside the container is NOT
+    # mounted, so it will not be overwritten by our local file system.
+    volumes:
+      # Mount the application source code.
+      - ./apps/server/app:/home/xiaolian/server/app
+      # Mount the public assets directory.
+      - ./apps/server/public:/home/xiaolian/server/public
+
+    # --- Command Override for Development ---
+    # We override the default CMD from the Dockerfile to enable uvicorn's
+    # hot-reloading feature. This is the key to an efficient dev workflow.
+    command:
+      - "uvicorn"
+      - "app.main:app"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8000"
+      - "--reload"

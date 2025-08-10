@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xiaolian-cli"
+version = "0.1.0"
+description = "小练实时语音AI助手的 TUI/CLI 客户端。"
+requires-python = ">=3.10, <3.13"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "pyaudio",
+    "numpy",
+    "websockets"
+]

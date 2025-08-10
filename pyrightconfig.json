@@ -1,0 +1,26 @@
+{
+  // --- 虚拟环境配置 ---
+  // 明确告诉 Pyright/Zed 在项目的根目录 (`.`) 下
+  // 寻找一个名为 `.venv` 的文件夹作为虚拟环境。
+  // 这是帮助编辑器找到正确依赖库的最关键步骤。
+  "venvPath": ".",
+  "venv": ".venv",
+
+  // --- 诊断设置 ---
+  // 将 "找不到导入" 的问题报告为 "警告" (黄色波浪线)，而不是错误。
+  "reportMissingImports": "warning",
+
+  // --- Monorepo 核心配置 ---
+  // `executionEnvironments` 是支持 Monorepo 的最健壮的配置。
+  // 它告诉 Pyright/Zed 项目的结构和代码的执行上下文。
+  "executionEnvironments": [
+    {
+      // 将项目根目录 (`.`) 定义为一个执行环境的根。
+      // 这会模拟在项目根目录下运行 Python 的行为，
+      // 确保对 `apps/cli` 和 `apps/server` 中以可编辑模式
+      // 安装的包的内部导入能够被正确解析。
+      // 这是解决“跳转到定义”和“import 警告”的根本性配置。
+      "root": "."
+    }
+  ]
+}

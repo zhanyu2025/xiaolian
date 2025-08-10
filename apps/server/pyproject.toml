@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xiaolian-server"
+version = "0.1.0"
+description = "The FastAPI backend for the Xiaolian real-time voice AI assistant."
+requires-python = ">=3.10, <3.13"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "structlog",
+    "torch",
+    "torchaudio",
+    "openai",
+    "funasr",
+    "edge_tts",
+    "websockets",
+    "llvmlite>=0.41", # Pinned to a version compatible with Python 3.12+
+    "numba>=0.58",    # Pinned to a version compatible with Python 3.12+
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app"]

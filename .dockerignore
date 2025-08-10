@@ -1,0 +1,45 @@
+# Docker 构建忽略文件
+# 此文件中列出的文件和目录将不会被包含在 Docker 的构建上下文中。
+# 这可以极大地减小上下文的大小，加快构建速度，并避免不必要地使缓存失效。
+
+# Git 版本控制
+.git
+.gitignore
+
+# Python 相关的缓存和虚拟环境
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+*.egg-info/
+
+# 操作系统和 IDE 特定的文件
+.DS_Store
+.idea/
+.vscode/
+
+# Docker 相关文件
+# Dockerfile 本身不需要被拷贝进镜像
+Dockerfile
+Dockerfile.dev
+
+# 项目管理和文档
+Makefile
+README.md
+tasks.md
+*.md
+
+# === 核心忽略规则 ===
+
+# 1. 忽略模型目录
+# 模型文件体积巨大，它们将通过卷挂载的方式提供给容器，而不应被打包进镜像。
+apps/server/models/
+
+# 2. 忽略录音目录
+# 录音目录是运行时生成的，同样通过卷挂-载来持久化，不应包含在构建中。
+apps/server/recordings/
+
+# 3. 忽略测试文件
+# 测试文件在开发时通过卷挂载在容器内运行，但不需要被打包进生产镜像。
+apps/server/tests/
